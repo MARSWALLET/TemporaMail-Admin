@@ -1,5 +1,5 @@
 const API_ROOT =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '') || 'http://localhost:3000';
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '') || 'http://localhost:5000';
 
 export const ADMIN_API_BASE_URL = `${API_ROOT}/admin/api/v1`;
 
