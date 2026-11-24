@@ -14,6 +14,7 @@ import {
   Sun,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import QRCode from 'qrcode';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useAdminAuth } from '@/components/AdminAuthProvider';
 import { useTheme } from '@/components/ThemeProvider';
@@ -35,11 +36,26 @@ export default function AdminLoginPage() {
     readonly secret: string;
     readonly otpauthUrl: string;
   } | null>(null);
+  const [totpQrDataUrl, setTotpQrDataUrl] = useState('');
   const [totpCode, setTotpCode] = useState('');
   const [recoveryCodes, setRecoveryCodes] = useState<readonly string[]>([]);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!totpSetup?.otpauthUrl) {
+      setTotpQrDataUrl('');
+      return;
+    }
+    void QRCode.toDataURL(totpSetup.otpauthUrl, {
+      width: 220,
+      margin: 2,
+      color: { dark: '#09090b', light: '#ffffff' },
+    })
+      .then(setTotpQrDataUrl)
+      .catch(() => setTotpQrDataUrl(''));
+  }, [totpSetup]);
 
   useEffect(() => {
     if (!loading && admin && step !== 'recovery') {
@@ -225,11 +241,29 @@ export default function AdminLoginPage() {
               </div>
 
               {setupRequired && totpSetup && (
-                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/80">
+                <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/80">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="flex h-48 w-48 items-center justify-center rounded-2xl border border-slate-200 bg-white p-2.5 shadow-xs dark:border-slate-700">
+                      {totpQrDataUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={totpQrDataUrl}
+                          alt="Admin 2FA Authenticator QR code"
+                          className="h-full w-full"
+                        />
+                      ) : (
+                        <span className="text-xs text-slate-400">Generating QR…</span>
+                      )}
+                    </div>
+                    <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400">
+                      Scan with Google Authenticator, 1Password, Apple Passwords, or Authy
+                    </p>
+                  </div>
+
                   <div>
                     <div className="mb-1 flex items-center justify-between">
                       <span className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
-                        TOTP Secret
+                        Manual TOTP Secret
                       </span>
                       <button
                         type="button"
@@ -249,32 +283,6 @@ export default function AdminLoginPage() {
                     </div>
                     <p className="break-all rounded-lg bg-white px-3 py-2 font-mono text-xs font-semibold text-slate-900 dark:bg-slate-950 dark:text-sky-300">
                       {totpSetup.secret}
-                    </p>
-                  </div>
-
-                  <div>
-                    <div className="mb-1 flex items-center justify-between">
-                      <span className="text-[11px] font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
-                        OTPAuth URI
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => void copyText('uri', totpSetup.otpauthUrl)}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline dark:text-sky-400"
-                      >
-                        {copiedKey === 'uri' ? (
-                          <>
-                            <Check className="h-3 w-3" /> Copied
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3 w-3" /> Copy URI
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    <p className="break-all rounded-lg bg-white px-3 py-2 font-mono text-[11px] text-slate-600 dark:bg-slate-950 dark:text-slate-300">
-                      {totpSetup.otpauthUrl}
                     </p>
                   </div>
                 </div>
